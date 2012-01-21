@@ -52,12 +52,22 @@ def main():
                     running = False
                 # takeoff / land
                 elif event.key == pygame.K_RETURN:
+                    #if(drone.trim()):
+                    #    print "Trimmed drone"
+                    #else:
+                    #    print "Trim failed!"
                     drone.takeoff()
                 elif event.key == pygame.K_SPACE:
                     drone.land()
                 # emergency
                 elif event.key == pygame.K_BACKSPACE:
                     drone.reset()
+                # trim (only when landed)
+                elif event.key == pygame.K_f:
+                    if(drone.trim()):
+                        print "Trimmed drone"
+                    else:
+                        print "Trim failed!"
                 # forward / backward
                 elif event.key == pygame.K_w:
                     drone.move_forward()
@@ -100,26 +110,33 @@ def main():
                 elif event.key == pygame.K_0:
                     drone.speed = 1.0
 
-        try:
-            surface = pygame.image.fromstring(drone.image, (W, H), 'RGB')
-            # battery status
-            hud_color = (255, 0, 0) if drone.navdata.get('drone_state', dict()).get('emergency_mask', 1) else (10, 10, 255)
-            bat = drone.navdata.get(0, dict()).get('battery', 0)
-            f = pygame.font.Font(None, 20)
-            hud = f.render('Battery: %i%%' % bat, True, hud_color)
-            screen.blit(surface, (0, 0))
-            screen.blit(hud, (10, 10))
-        except:
-            pass
+        #try:
+        #    surface = pygame.image.fromstring(drone.image, (W, H), 'RGB')
+        #    # battery status
+        #    hud_color = (255, 0, 0) if drone.navdata.get('drone_state', dict()).get('emergency_mask', 1) else (10, 10, 255)
+        #    bat = drone.navdata.get(0, dict()).get('battery', 0)
+        #    f = pygame.font.Font(None, 20)
+        #    hud = f.render('Battery: %i%%' % bat, True, hud_color)
+        #    screen.blit(surface, (0, 0))
+        #    screen.blit(hud, (10, 10))
+        #except:
+        #    pass
 
-        pygame.display.flip()
+        bat = drone.navdata.get(0, dict()).get('battery', 0)
+        #print "Battery: %i%%" % (bat)
+        #pygame.display.flip()
         clock.tick(50)
-        pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
+        pygame.display.set_caption("Batt: %i%%" % (bat))
 
     print "Shutting down...",
     drone.halt()
     print "Ok."
 
+
+import sys
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)
 

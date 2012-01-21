@@ -39,8 +39,9 @@ __author__ = "Bastian Venthur"
 
 
 ARDRONE_NAVDATA_PORT = 5554
-ARDRONE_VIDEO_PORT = 5555
+ARDRONE_VIDEO_PORT   = 5555
 ARDRONE_COMMAND_PORT = 5556
+ARDRONE_IP_ADDRESS   = '192.168.1.1'
 
 
 class ARDrone(object):
@@ -68,9 +69,16 @@ class ARDrone(object):
         self.navdata = dict()
         self.time = 0
 
+        # AMN if you're using the calls to set speed in various directions,
+        # we need to store the current values here
+        self.speed_updown = 0.0
+        self.speed_forwardback = 0.0
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+
     def takeoff(self):
         """Make the drone takeoff."""
-        self.at(at_ftrim)
+        #self.trim()  # This may be Bad if the drone's already OK...
         self.at(at_config, "control:altitude_max", "20000")
         self.at(at_ref, True)
 
@@ -80,31 +88,114 @@ class ARDrone(object):
 
     def hover(self):
         """Make the drone hover."""
-        self.at(at_pcmd, False, 0, 0, 0, 0)
+        self.speed_updown = 0.0
+        self.speed_forwardback = 0.0
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def move_left(self):
         """Make the drone move left."""
-        self.at(at_pcmd, True, -self.speed, 0, 0, 0)
+        #self.at(at_pcmd, True, -self.speed, 0, 0, 0)
+        self.speed_updown = 0.0
+        self.speed_forwardback = 0.0
+        self.speed_leftright = -self.speed
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def move_right(self):
         """Make the drone move right."""
-        self.at(at_pcmd, True, self.speed, 0, 0, 0)
+        #self.at(at_pcmd, True, self.speed, 0, 0, 0)
+        self.speed_updown = 0.0
+        self.speed_forwardback = 0.0
+        self.speed_leftright = self.speed
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
+
 
     def move_up(self):
         """Make the drone rise upwards."""
-        self.at(at_pcmd, True, 0, 0, self.speed, 0)
+        #self.at(at_pcmd, True, 0, 0, self.speed, 0)
+        self.speed_updown = self.speed
+        self.speed_forwardback = 0.0
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def move_down(self):
         """Make the drone decent downwards."""
-        self.at(at_pcmd, True, 0, 0, -self.speed, 0)
+        #self.at(at_pcmd, True, 0, 0, -self.speed, 0)
+        self.speed_updown = -self.speed
+        self.speed_forwardback = 0.0
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def move_forward(self):
         """Make the drone move forward."""
-        self.at(at_pcmd, True, 0, -self.speed, 0, 0)
+        #self.at(at_pcmd, True, 0, -self.speed, 0, 0)
+        self.speed_updown = 0.0
+        self.speed_forwardback = -self.speed
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def move_backward(self):
         """Make the drone move backwards."""
-        self.at(at_pcmd, True, 0, self.speed, 0, 0)
+        #self.at(at_pcmd, True, 0, self.speed, 0, 0)
+        self.speed_updown = 0.0
+        self.speed_forwardback = self.speed
+        self.speed_leftright = 0.0
+        self.speed_yaw = 0.0
+        self.set_drone_speeds()
+
+    def set_drone_speeds(self):
+        """Sets the drone's speed values to whatever we've got stored"""
+        self.at(at_pcmd, True, self.speed_leftright, self.speed_forwardback, self.speed_updown, self.speed_yaw)
+
+    def set_speed_leftright(self, speed):
+        """Sets the left/right speed; -1.0 to 1.0"""
+        s = speed
+        if(s > 1.0):
+            s = 1.0
+        elif(s < -1.0):
+            s = -1.0
+
+        self.speed_leftright = s
+        self.set_drone_speeds()
+
+    def set_speed_forwardback(self, speed):
+        """Sets the forward/backward speed; -1.0 to 1.0"""
+        s = speed
+        if(s > 1.0):
+            s = 1.0
+        elif(s < -1.0):
+            s = -1.0
+
+        self.speed_forwardback = s
+        self.set_drone_speeds()
+
+    def set_speed_updown(self, speed):
+        """Sets the up/down speed; -1.0 to 1.0"""
+        s = speed
+        if(s > 1.0):
+            s = 1.0
+        elif(s < -1.0):
+            s = -1.0
+
+        self.speed_updown = s
+        self.set_drone_speeds()
+
+    def set_speed_yaw(self, speed):
+        """Sets the yaw speed; -1.0 to 1.0"""
+        s = speed
+        if(s > 1.0):
+            s = 1.0
+        elif(s < -1.0):
+            s = -1.0
+
+        self.speed_yaw = s
+        self.set_drone_speeds()
 
     def turn_left(self):
         """Make the drone rotate left."""
@@ -120,8 +211,12 @@ class ARDrone(object):
         self.at(at_ref, False, False)
 
     def trim(self):
-        """Flat trim the drone."""
-        self.at(at_ftrim)
+        """Flat trim the drone.  Returns True if trimmed, False if the drone was flying."""
+        # Check the drone is landed forst!
+        if(not self.is_flying()):
+            self.at(at_ftrim)
+            return True
+        return False
 
     def set_speed(self, speed):
         """Set the drone's speed.
@@ -129,6 +224,13 @@ class ARDrone(object):
         Valid values are floats from [0..1]
         """
         self.speed = speed
+
+    def is_flying(self):
+        """Returns True is the drone is flying, False otherwise."""
+        try:
+            return( self.navdata['drone_state']['fly_mask'] == 1)
+        except KeyError:
+            return False
 
     def at(self, cmd, *args, **kwargs):
         """Wrapper for the low level at commands.
@@ -306,7 +408,7 @@ def at(command, seq, params):
             param_str += ',"'+p+'"'
     msg = "AT*%s=%i%s\r" % (command, seq, param_str)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(msg, ("192.168.1.1", ARDRONE_COMMAND_PORT))
+    sock.sendto(msg, (ARDRONE_IP_ADDRESS, ARDRONE_COMMAND_PORT))
 
 def f2i(f):
     """Interpret IEEE-754 floating-point value as signed integer.
