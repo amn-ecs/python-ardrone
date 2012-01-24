@@ -52,11 +52,17 @@ class ARDroneNetworkProcess(multiprocessing.Process):
         video_socket.bind(('', libardrone.ARDRONE_VIDEO_PORT))
         video_socket.sendto("\x01\x00\x00\x00", ('192.168.1.1', libardrone.ARDRONE_VIDEO_PORT))
 
-        nav_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        nav_socket.setblocking(0)
-        nav_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        nav_socket.bind(('', libardrone.ARDRONE_NAVDATA_PORT))
-        nav_socket.sendto("\x01\x00\x00\x00", ('192.168.1.1', libardrone.ARDRONE_NAVDATA_PORT))
+        try:
+            nav_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            nav_socket.setblocking(0)
+            nav_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            nav_socket.bind(('', libardrone.ARDRONE_NAVDATA_PORT))
+            nav_socket.sendto("\x01\x00\x00\x00", ('192.168.1.1', libardrone.ARDRONE_NAVDATA_PORT))
+        except:
+            pass
+
+
+        video_dump_file = open("/tmp/arvideo_dump.mjpeg", 'w')
 
         stopping = False
         while not stopping:
@@ -70,6 +76,8 @@ class ARDroneNetworkProcess(multiprocessing.Process):
                             # we consumed every packet from the socket and
                             # continue with the last one
                             break
+                    # AMN temporary dump to file to see what's what in video decoding land...
+                    #    video_dump_file.write(data)
                     #w, h, image, t = arvideo.read_picture(data)
                     #self.video_pipe.send(image)
                     # AMN removed video handling for now, as it's slow as treacle and I'm not using it yet!
@@ -88,14 +96,13 @@ class ARDroneNetworkProcess(multiprocessing.Process):
                     stopping = True
                     break
 
-        print "Stopping video feed..."
         try:
             video_socket.shutdown(socket.SHUT_RDWR)
+            video_dump_file.close()
         except:
             pass
         video_socket.close()
 
-        print "Stopping navdata feed..."
         try:
             nav_socket.shutdown(socket.SHUT_RDWR)
         except:

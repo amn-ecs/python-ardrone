@@ -75,10 +75,12 @@ class ARDrone(object):
         self.speed_forwardback = 0.0
         self.speed_leftright = 0.0
         self.speed_yaw = 0.0
+        self.set_drone_speeds()
 
     def takeoff(self):
         """Make the drone takeoff."""
         #self.trim()  # This may be Bad if the drone's already OK...
+        self.hover() # Resets all speeds
         self.at(at_config, "control:altitude_max", "20000")
         self.at(at_ref, True)
 
@@ -231,6 +233,23 @@ class ARDrone(object):
             return( self.navdata['drone_state']['fly_mask'] == 1)
         except KeyError:
             return False
+
+    def set_video_mode(self, video_mode = 'front'):
+        """
+        Sets the video mode - 'front', 'lower', 'pip_front', 'pip_lower'.
+        pip_lower is picture-in-picture with the lower camera as the main display.
+        """
+        if(video_mode == 'front'):
+            self.at_zap(0)
+        elif(video_mode == 'lower'):
+            self.at_zap(1)
+        elif(video_mode == 'pip_front'):
+            self.at_zap(2)
+        elif(video_mode == 'pip_lower'):
+            self.at_zap(3)
+        else:
+            self.at_zap(0) # Front camera default
+
 
     def at(self, cmd, *args, **kwargs):
         """Wrapper for the low level at commands.
