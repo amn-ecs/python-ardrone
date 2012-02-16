@@ -29,7 +29,7 @@ in a way that it works also without psyco installed. On the author's
 development machine the speed up is from 2FPS w/o psyco to > 20 FPS w/ psyco.
 """
 
-
+from scipy.fftpack import idct
 import array
 import cProfile
 import datetime
@@ -280,6 +280,27 @@ class BitReader(object):
 def inverse_dct(block):
     """Inverse discrete cosine transform.
     """
+
+    #from pprint import pprint
+
+    #block_array = array.array('f', block)
+    #sensible = idct(block_array, norm='ortho')
+    #sensible = idct(block_array)
+    #not_so_sensible = array.array('l', sensible.tolist()).astype('Int')
+    
+    #print "Original: "
+    #pprint(block)
+
+    #print "IDCT: "
+    #pprint(sensible)
+
+    #print "Hideous: "
+    #pprint(not_so_sensible)
+
+    #return not_so_sensible
+
+    # Fung from now on
+
     workspace = ZEROS[0:64]
     data = ZEROS[0:64]
     for pointer in range(8):
